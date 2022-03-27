@@ -1,0 +1,7 @@
+@charset "UTF-8";
+
+.content {
+    max-width: 500px;
+    margin: 0 auto;
+    display: block;
+}

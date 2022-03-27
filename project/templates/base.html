@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <title>Riddle</title>
+</head>
+<body>
+<div class="content">
+    <ul>
+        <li><a href="{{ url_for('main.index') }}">Home</a></li>
+        
+        {% if current_user.is_authenticated %}
+        <li><a href="{{ url_for('main.stats') }}">Stats</a></li>
+        {% endif %}
+        
+        {% if not current_user.is_authenticated %}
+        <li><a href="{{ url_for('auth.login') }}">Log in</a></li>
+        <li><a href="{{ url_for('auth.signup') }}">Sign up</a></li>
+        {% endif %}
+
+        {% if current_user.is_authenticated %}
+        <li><a href="{{ url_for('auth.logout') }}">Logout</a></li>
+        {% endif %}
+    </ul>
+    {% block content %}
+    {% endblock %}
+</div>
+</body>
+</html>

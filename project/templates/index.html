@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Riddle</h1>
+
+{% for hint in session['hints'] %}
+<h3>{{ hint }}</h3>
+{% endfor %}
+
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+    <div>{{ messages[0] }}</div>
+{% endif %}
+
+{% endwith %}
+<form action="/{{ 1 }}" method="POST">
+    <input type="text" name="guess" id="guess">
+    <input type="submit" value="Guess">
+</form>
+<form action="/" method=""></form>
+<table>
+    {% for guess in session['guesses'] %}
+    <tr>
+        <td>{{ guess[0] }}</td>
+        <td>{{ guess[1] }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% if not session['riddle_completed'] %}
+    <form action="/{{ 0 }}" method="POST">
+        <input type="submit" value="Give Up">
+    </form>
+{% endif %}
+{% if session['riddle_completed'] %}
+    <form action= "/">
+        <input type="submit" value="New riddle">
+    </form>
+{% endif %}
+{% endblock %}

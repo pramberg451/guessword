@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h3>Welcome, {{ current_user.username }}!</h3>
+<p>Words Guessed: {{ current_user.wins }}</p>
+<p>Total guesses: {{ current_user.total_guesses }}</p>
+<p>Average # of guesses: {{ current_user.total_guesses / current_user.wins if current_user.wins else 0 }}</p>
+<p>Total hints: {{ current_user.total_hints }}</p>
+<p>Average # of hints: {{ current_user.total_hints / current_user.wins if current_user.wins else 0 }}</p>
+<p>Current streak: {{ current_user.streak }}</p>
+<p>Total forfeits: {{ current_user.forfeits }}</p>
+<p>Winrate: {{ (current_user.wins / (current_user.forfeits + current_user.wins) if current_user.wins else 0) * 100 }}%</p>
+{% endblock %}
