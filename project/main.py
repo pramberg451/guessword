@@ -2,16 +2,28 @@ from flask import Blueprint, render_template, request, session, flash
 from flask_login import login_required, current_user
 from . import db
 import requests
+import random
+import json
+import xmltodict
 
 main = Blueprint('main', __name__)
 
-def get_new_hint():
-    hint = 'This is a hint'
+def get_new_hint(word):
+    base_url = "http://ngrams.ucd.ie/therex3/common-nouns/member.action?member={term}&kw={term}&needDisamb=false&xml=true"
+    query = base_url.format(term=word)
+    response = requests.get(query)
+    json_string = json.dumps(xmltodict.parse(response.content))
+    data = json.loads(json_string)
+    categories = []
+    for category in data['MemberData']['Categories']['Category']:
+        categories.append(category)
+
+    hint = random.choice(categories)
     return hint
 
-def get_new_riddle():
-    riddle = 'barnacle'
-    return riddle
+def get_new_word():
+    word = random.choice(open("project/nouns.txt").readlines()).strip()
+    return word
 
 def get_similarity():
     similarity = 0.75
@@ -29,13 +41,14 @@ def index():
     # If a new riddle needs to be generated
     if session['new_riddle']:
         # Get a new word to guess
-        session['answer'] = get_new_riddle()
+        session['answer'] = get_new_word()
         
         # Get an initial hint
         list = []
-        list.append(get_new_hint())
+        list.append(get_new_hint(session['answer']))
         session['hints'] = list
-        current_user.total_hints += 1
+        if current_user.is_authenticated:
+            current_user.total_hints += 1
 
         # Clear the guesses and reset completion status
         session['guesses'] = []
@@ -47,15 +60,17 @@ def index():
 def index_post(is_guess):
     if is_guess:
         new_guess = request.form['guess']
-        current_user.total_guesses += 1
+        if current_user.is_authenticated:
+            current_user.total_guesses += 1
     
         # If guess was correct
         if new_guess == session['answer']:
             flash('Answer found!')
             session['riddle_completed'] = True
             
-            current_user.wins += 1
-            current_user.streak += 1
+            if current_user.is_authenticated:
+                current_user.wins += 1
+                current_user.streak += 1
         
         # If guess was a repeat
         elif any(new_guess in guess for guess in session['guesses']):
@@ -70,16 +85,18 @@ def index_post(is_guess):
         
             if len(session.get('hints')) < 4:
                 list = session['hints']
-                list.append(get_new_hint())
+                list.append(get_new_hint(session['answer']))
                 session['hints'] = list
                 
-                current_user.total_hints += 1
+                if current_user.is_authenticated:
+                    current_user.total_hints += 1
     else:
         flash('The answer was ' + session['answer'] + ".")
         session['riddle_completed'] = True
-
-        current_user.forfeits += 1
-        current_user.streak = 0
+        
+        if current_user.is_authenticated:
+            current_user.forfeits += 1
+            current_user.streak = 0
     
     db.session.commit()
     return render_template('index.html')
