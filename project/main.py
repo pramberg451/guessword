@@ -1,6 +1,8 @@
 from flask import Blueprint, render_template, request, session, flash
 from flask_login import login_required, current_user
 from . import db
+from .models import Word
+from numpy import frombuffer, float32, sqrt
 import requests
 import random
 import json
@@ -14,6 +16,7 @@ def get_new_hint(word):
     response = requests.get(query)
     json_string = json.dumps(xmltodict.parse(response.content))
     data = json.loads(json_string)
+    
     categories = []
     for category in data['MemberData']['Categories']['Category']:
         categories.append(category)
@@ -25,9 +28,23 @@ def get_new_word():
     word = random.choice(open("project/nouns.txt").readlines()).strip()
     return word
 
-def get_similarity():
-    similarity = 0.75
+def square_rooted(x):
+    return round(sqrt(sum([a*a for a in x])),3)
+
+def cosine_similarity(x,y):
+    numerator = sum(a*b for a,b in zip(x,y))
+    denominator = square_rooted(x)*square_rooted(y)
+    return round(numerator/float(denominator),3)
+
+def get_similarity(answer, guess):
+    word1 = Word.query.filter_by(word=answer).first()
+    word1vector = frombuffer(word1.vector, float32)
+    word2 = Word.query.filter_by(word=guess).first()
+    word2vector = frombuffer(word2.vector, float32)
+    
+    similarity = cosine_similarity(word1vector, word2vector)
     return similarity
+    
 
 @main.route('/')
 def index():
@@ -59,7 +76,7 @@ def index():
 @main.route('/<int:is_guess>', methods=['POST'])
 def index_post(is_guess):
     if is_guess:
-        new_guess = request.form['guess']
+        new_guess = request.form['guess'].lower()
         if current_user.is_authenticated:
             current_user.total_guesses += 1
     
@@ -78,7 +95,7 @@ def index_post(is_guess):
     
         # If guess was incorrect and not a repeat
         else:
-            similarity = get_similarity()
+            similarity = get_similarity(session['answer'], new_guess)
             list = session['guesses']
             list.append([new_guess, similarity])
             session['guesses'] = list

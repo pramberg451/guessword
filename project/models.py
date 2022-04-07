@@ -12,3 +12,7 @@ class User(UserMixin, db.Model):
 
     total_hints = db.Column(db.Integer)
     total_guesses = db.Column(db.Integer)
+
+class Word(db.Model):
+    word = db.Column(db.String(50), primary_key=True)
+    vector = db.Column(db.BLOB)
