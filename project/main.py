@@ -10,23 +10,53 @@ import xmltodict
 
 main = Blueprint('main', __name__)
 
-def get_new_hint(word):
+def get_new_word():
+    word = random.choice(open("project/nouns.txt").readlines()).strip()
+    return word
+
+def get_possible_hints(word):
     base_url = "http://ngrams.ucd.ie/therex3/common-nouns/member.action?member={term}&kw={term}&needDisamb=false&xml=true"
     query = base_url.format(term=word)
     response = requests.get(query)
     json_string = json.dumps(xmltodict.parse(response.content))
     data = json.loads(json_string)
-    
+
     categories = []
     for category in data['MemberData']['Categories']['Category']:
-        categories.append(category)
+        if int(category['@weight']) > 50:
+            categories.append(category)
+    
+    return categories
 
-    hint = random.choice(categories)
+def get_new_hint():
+    if session['possible_hints']:
+        category = random.choice(session['possible_hints'])
+        descriptors = category['#text'].split(':')
+        hint = "".join(["The answer is a ", descriptors[0], " ", descriptors[1], "."])
+    else:
+        hint = 0
     return hint
 
-def get_new_word():
-    word = random.choice(open("project/nouns.txt").readlines()).strip()
-    return word
+def get_comparative_hint(word):
+    base_url = "http://ngrams.ucd.ie/therex3/common-nouns/share.action?word1={word1}&word2={word2}&xml=true"
+    query = base_url.format(word1 = session['answer'], word2 = word)
+    response = requests.get(query)
+    json_string = json.dumps(xmltodict.parse(response.content))
+    data = json.loads(json_string)
+        
+    categories = []
+    if len(data['SharedCategory']['Members']) > 2:
+        for category in data['SharedCategory']['Members']['Member']:
+            #print(category)
+            if int(category['@weight']) > 50:
+                categories.append(category)
+    if categories:    
+        category = random.choice(categories)
+        descriptors = category['#text'].split(':')
+        hint = "".join(["The answer" + " and " + word + " are both ", descriptors[0], " ", descriptors[1], "s."])
+    else:
+        hint = 0
+    return hint
 
 def square_rooted(x):
     return round(sqrt(sum([a*a for a in x])),3)
@@ -57,13 +87,15 @@ def index():
     
     # If a new riddle needs to be generated
     if session['new_riddle']:
-        # Get a new word to guess
+        # Get a new word to guess and its Thesaurus Rex data
         session['answer'] = get_new_word()
+        session['possible_hints'] = get_possible_hints(session['answer'])
         
         # Get an initial hint
         list = []
-        list.append(get_new_hint(session['answer']))
+        list.append(get_new_hint())
         session['hints'] = list
+        
         if current_user.is_authenticated:
             current_user.total_hints += 1
 
@@ -93,20 +125,47 @@ def index_post(is_guess):
         elif any(new_guess in guess for guess in session['guesses']):
             flash('That has already been guessed.')
     
-        # If guess was incorrect and not a repeat
+        # If guess was incorrect
         else:
+            # Get similarity between the guess and the answer and add to the list
             similarity = get_similarity(session['answer'], new_guess)
             list = session['guesses']
             list.append([new_guess, similarity])
             session['guesses'] = list
-        
-            if len(session.get('hints')) < 4:
-                list = session['hints']
-                list.append(get_new_hint(session['answer']))
-                session['hints'] = list
+
+            # If another normal hint is possible (MAX 3)
+            if len(session.get('hints')) < 3:
+                hint = get_new_hint()
+                # If hint exists and its not a repeat add it to the hint list
+                if hint and hint not in session['hints']:
+                    list = session['hints']
+                    list.append(hint)
+                    session['hints'] = list
                 
                 if current_user.is_authenticated:
                     current_user.total_hints += 1
+            
+            # If another comparative hint is possible (MAX 2)
+            elif len(session.get('hints')) < 5 or (len(session['possible_hints']) == len(session['hints'])):
+                # Get a comparative hint for each guess and if its vaild append it
+                comparative_hints = []
+                for guess in session['guesses']:
+                    comparative_hint = get_comparative_hint(guess[0])
+                    if comparative_hint:
+                        comparative_hints.append(comparative_hint)
+                
+                # If there were any valid comparative hints choose a random one and add it to the hint list if its not a repeat
+                if comparative_hints:
+                    hint = random.choice(comparative_hints)
+                    if hint not in session['hints']:
+                        list = session['hints']
+                        list.append(hint)
+                        session['hints'] = list
+
+                if current_user.is_authenticated:
+                    current_user.total_hints += 1
+    
+    # If it wasn't a guess then it was a forfeit
     else:
         flash('The answer was ' + session['answer'] + ".")
         session['riddle_completed'] = True
