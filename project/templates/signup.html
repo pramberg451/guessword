@@ -4,9 +4,9 @@
 <h3>Sign Up</h3>
 {% with messages = get_flashed_messages() %}
 {% if messages %}
-    <div>
+    <p>
         {{ messages[0] }}. Go to <a href="{{ url_for('auth.login') }}">login page</a>
-    </div>
+    </p>
 {% endif %}
 {% endwith %}
 <form action="/signup" method="POST">

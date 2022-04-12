@@ -33,7 +33,6 @@ acupuncture
 adaptation
 adapter
 addiction
-addition
 address
 adjective
 administration
@@ -406,8 +405,6 @@ bowling
 box
 boy
 boyfriend
-boysenberry
-bra
 brace
 bracelet
 bracket
@@ -418,7 +415,6 @@ branch
 brand
 brandy
 brass
-brassiere
 bratwurst
 bread
 break

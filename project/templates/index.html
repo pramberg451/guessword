@@ -1,39 +1,52 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h1>Riddle</h1>
 
+<div class="hints">
 {% for hint in session['hints'] %}
-<h3>{{ hint }}</h3>
+<h4>{{ hint }}</h4>
 {% endfor %}
+</div>
 
 {% with messages = get_flashed_messages() %}
 {% if messages %}
-    <div>{{ messages[0] }}</div>
+    <p>{{ messages[0] }}</p>
 {% endif %}
 
 {% endwith %}
-<form action="/{{ 1 }}" method="POST">
-    <input type="text" name="guess" id="guess">
+
+<form action="/{{ 0 }}" method="POST">
+    <input type="text" name="guess" id="guess" autocomplete="off" autofocus="autofocus" onfocus="this.select()">
     <input type="submit" value="Guess">
 </form>
-<form action="/" method=""></form>
-<table>
+
+{% if session['guesses'] %}
+<table class="table table-sm">
+    <thead>
+        <tr style="border-bottom: 1px solid lightgrey">
+            <th>Guess</th>
+            <th style="text-align: right">Similarity</th>
+        </tr>
+    </thead>
+    <tbody>
     {% for guess in session['guesses'] %}
     <tr>
         <td>{{ guess[0] }}</td>
-        <td>{{ guess[1] }}</td>
+        <td style="text-align: right">{{ guess[1] }}%</td>
     </tr>
     {% endfor %}
+    </tbody>
 </table>
+{% endif %}
+
 {% if not session['riddle_completed'] %}
-    <form action="/{{ 0 }}" method="POST">
-        <input type="submit" value="Give Up">
+    <form action="/{{ 1 }}" method="POST">
+        <input class="give_up" type="submit" value="Give Up">
     </form>
 {% endif %}
 {% if session['riddle_completed'] %}
     <form action= "/">
-        <input type="submit" value="New riddle">
+        <input class="new_riddle" type="submit" value="New riddle">
     </form>
 {% endif %}
 {% endblock %}
