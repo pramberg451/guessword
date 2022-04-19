@@ -27,6 +27,8 @@ def login_post():
     login_user(user)
     return redirect(url_for('main.index'))
 
+
+
 @auth.route('/singup')
 def signup():
     return render_template('signup.html')
@@ -56,6 +58,8 @@ def signup_post():
     db.session.commit()
     
     return redirect(url_for('auth.login'))
+
+
 
 @auth.route('/logout')
 @login_required
